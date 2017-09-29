@@ -1,5 +1,6 @@
-#include "sock.h"
-#include "capture.h"
+#include "../sock.h"
+#include "../capture.h"
+#include "../gpio.h"
 
 void * send_image(void * arg);
 
@@ -14,6 +15,7 @@ int main(int argc, char *argv[])
 	 }
 
 	serv.sock = initSocketTCPConnect(argv[1],atoi(argv[2]));
+	gpio_init();
 
 	pthread_create(&snd_thread, NULL, send_image, (void*)&serv.sock);
 	pthread_join(snd_thread, NULL);
@@ -28,15 +30,25 @@ void * send_image(void * arg)   // send thread main
   char buf[BUF_SIZE];
   FILE *fp;
 
-  captureBM();
-	fp = fopen(OUTFILE_NAME, "rb");
+  read(sock,buf,sizeof(buf));
+  printf("server send passwd : %s \n",buf);
+	get_button();
+	
+	if(cmp_button_passwd(buf))
+	{
+		;
+	}
+	else
+	{
+  		captureBM();
+		fp = fopen(OUTFILE_NAME, "rb");
 
-  bzero(buf,BUF_SIZE);
-  while ( (file_size = fread(buf,sizeof(char),BUF_SIZE,fp)) > 0 ) {
-    send(sock,buf,file_size,0);
-    bzero(buf,BUF_SIZE);
-  }
-
+  		bzero(buf,BUF_SIZE);
+  		while ( (file_size = fread(buf,sizeof(char),BUF_SIZE,fp)) > 0 ) {
+    			send(sock,buf,file_size,0);
+    		bzero(buf,BUF_SIZE);
+		}
+	}
 	fclose(fp);
 
 	return NULL;
