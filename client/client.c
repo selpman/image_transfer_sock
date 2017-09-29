@@ -3,6 +3,10 @@
 #include "../gpio.h"
 
 void * send_image(void * arg);
+typedef enum{
+	BLOCK,
+	PASS
+} state_t;
 
 int main(int argc, char *argv[])
 {
@@ -27,6 +31,7 @@ void * send_image(void * arg)   // send thread main
 {
 	int sock=*((int*)arg);
   int file_size;
+  int state =BLOCK;
   char buf[BUF_SIZE];
   FILE *fp;
 
@@ -36,11 +41,18 @@ void * send_image(void * arg)   // send thread main
 	
 	if(cmp_button_passwd(buf))
 	{
-		;
+		printf("correct password\n");
+		printf("Door opend\n");
+		bzero(buf,BUF_SIZE);
+		state = PASS;
+		write(sock,&state,sizeof(int));
 	}
 	else
 	{
   		captureBM();
+		printf("Alert! password dismatched\n");
+		state = BLOCK;
+		write(sock,&state,sizeof(int));
 		fp = fopen(OUTFILE_NAME, "rb");
 
   		bzero(buf,BUF_SIZE);
